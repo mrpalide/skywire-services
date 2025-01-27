@@ -37,71 +37,143 @@ func (g *Graph) Shortest(ctx context.Context, source, destination cipher.PubKey,
 		return nil, ErrNoRoute
 	}
 
-	previousNodes, err := g.dijkstra(ctx, sourceVertex, destinationVertex)
+	previousNodes, err := g.dijkstra(ctx, sourceVertex, destinationVertex, minLen, maxLen)
 	if err != nil {
 		return nil, err
 	}
 	return g.routes(ctx, previousNodes, destinationVertex, minLen, maxLen, number)
 }
 
+type queueElement struct {
+	vertex   *vertex
+	distance int
+	hops     int
+}
+
 type previousNode struct {
-	distToDestination int
-	previous          *vertex
+	distance int
+	hops     int
+	previous *vertex
 }
 
 // Implement node version of: https://rosettacode.org/wiki/Dijkstra%27s_algorithm#Go
 // dijkstra computes optimal paths from source node to every other node, but it keeps track of every other
 // suboptimal route to destination and returns them
-func (g *Graph) dijkstra(ctx context.Context, source, destination *vertex) ([]previousNode, error) {
-	dist := make(map[*vertex]int)
-	prev := make(map[*vertex]*vertex)
+func (g *Graph) dijkstra(ctx context.Context, source, destination *vertex, minhop, maxhop int) ([]previousNode, error) {
+	dist := make(map[*vertex]map[int]int)
+	prev := make(map[*vertex]map[int]*vertex)
 	destinationPrev := make([]previousNode, 0)
 
 	sid := source
-	dist[sid] = 0
-	q := &priorityQueue{[]*vertex{}, make(map[*vertex]int), make(map[*vertex]int)}
+	// Initialize distance for source
+	dist[sid] = make(map[int]int)
+	dist[sid][0] = 0 // 0 hops, distance 0
+
+	q := &priorityQueue{[]*queueElement{}, make(map[*vertex]int), make(map[*vertex]int)}
+	heap.Init(q)
+	// Add source to the queue
+	heap.Push(q, &queueElement{vertex: sid, distance: 0, hops: 0})
+
+	// Initialize other vertices
 	for _, v := range g.graph {
-		select {
-		case <-ctx.Done():
-			return nil, ErrContextClosed
-		default:
-			if v != sid {
-				dist[v] = infinity
-			}
-			prev[v] = nil
-			q.addWithPriority(v, dist[v])
+		if v != sid {
+			dist[v] = make(map[int]int)
 		}
+		prev[v] = make(map[int]*vertex)
 	}
-	for len(q.items) != 0 {
+
+	for q.Len() > 0 {
 		select {
 		case <-ctx.Done():
 			return nil, ErrContextClosed
 		default:
-			u := heap.Pop(q).(*vertex)
-			// Process only if there is a path from root (dist < infinity)
-			if dist[u] < infinity {
-				for _, v := range u.neighbors {
-					if v == destination {
-						alt := dist[u] + distBetweenNodes
-						pn := previousNode{alt, u}
-						destinationPrev = append(destinationPrev, pn)
-					} else {
-						alt := dist[u] + distBetweenNodes
-						if alt < dist[v] {
-							dist[v] = alt
-							prev[v] = u
-							q.update(v, alt)
+			uElement := heap.Pop(q).(*queueElement)
+			u := uElement.vertex
+			currentDist := uElement.distance
+			currentHops := uElement.hops
+
+			// Skip if a better distance already exists for this vertex and hop count
+			if d, exists := dist[u][currentHops]; !exists || currentDist > d {
+				continue
+			}
+
+			// Process neighbors
+			for _, v := range u.neighbors {
+				newHops := currentHops + 1
+				if newHops > maxhop {
+					continue
+				}
+
+				// Assuming edge weight is 1; replace with actual weight retrieval
+				edgeWeight := 1
+				alt := currentDist + edgeWeight
+
+				if v == destination {
+					if newHops >= minhop {
+						pn := previousNode{
+							distance: alt,
+							hops:     newHops,
+							previous: u,
 						}
+						destinationPrev = append(destinationPrev, pn)
+					}
+				} else {
+					// Check if this path is better
+					existingDist, exists := dist[v][newHops]
+					if !exists || alt < existingDist {
+						dist[v][newHops] = alt
+						prev[v][newHops] = u
+						heap.Push(q, &queueElement{
+							vertex:   v,
+							distance: alt,
+							hops:     newHops,
+						})
 					}
 				}
 			}
 		}
 	}
 
-	g.dist = dist
-	g.prev = prev
+	// Find the best path in destinationPrev
+	if len(destinationPrev) == 0 {
+		return nil, errors.New("no path found within hop constraints")
+	}
 
-	return destinationPrev, nil
+	// Select the entry with the smallest distance
+	bestIndex := 0
+	for i, pn := range destinationPrev {
+		if pn.distance < destinationPrev[bestIndex].distance {
+			bestIndex = i
+		}
+	}
+	best := destinationPrev[bestIndex]
+
+	// Reconstruct the path
+	path := []previousNode{}
+	currentVertex := destination
+	currentHops := best.hops
+	for currentVertex != source && currentHops > 0 {
+		prevVertex := prev[currentVertex][currentHops]
+		if prevVertex == nil {
+			break // Path is broken
+		}
+		path = append([]previousNode{{
+			distance: dist[currentVertex][currentHops],
+			hops:     currentHops,
+			previous: prevVertex,
+		}}, path...)
+		currentVertex = prevVertex
+		currentHops--
+	}
+
+	// Add the source node
+	path = append([]previousNode{{
+		distance: 0,
+		hops:     0,
+		previous: nil,
+	}}, path...)
+
+	return path, nil
 }
 
 // Route sorts by length and backtraces every route from destination to source. Only adds the paths
@@ -109,7 +181,7 @@ func (g *Graph) dijkstra(ctx context.Context, source, destination *vertex) ([]pr
 func (g *Graph) routes(ctx context.Context, previousNodes []previousNode, destination *vertex, minLen, maxLen, number int) ([]routing.Route, error) {
 	// Sort
 	sort.Slice(previousNodes, func(i, j int) bool {
-		return previousNodes[i].distToDestination < previousNodes[j].distToDestination
+		return previousNodes[i].distance < previousNodes[j].distance
 	})
 
 	// Backtrace
@@ -124,7 +196,7 @@ func (g *Graph) routes(ctx context.Context, previousNodes []previousNode, destin
 		case <-ctx.Done():
 			return nil, ErrContextClosed
 		default:
-			if prev.distToDestination >= minLen && prev.distToDestination <= maxLen {
+			if prev.distance >= minLen && prev.distance <= maxLen {
 				var route routing.Route
 				hop := routing.Hop{
 					From: prev.previous.edge,
