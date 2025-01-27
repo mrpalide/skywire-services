@@ -5,6 +5,7 @@ import (
 	"container/heap"
 	"context"
 	"errors"
+	"fmt"
 	"sort"
 
 	"github.com/skycoin/skywire/pkg/routing"
@@ -172,7 +173,9 @@ func (g *Graph) dijkstra(ctx context.Context, source, destination *vertex, minho
 		hops:     0,
 		previous: nil,
 	}}, path...)
-
+	fmt.Println("--------------------===--------------------")
+	fmt.Println(path)
+	fmt.Println("--------------------===--------------------")
 	return path, nil
 }
 
