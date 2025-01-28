@@ -56,7 +56,7 @@ func NewGraph(ctx context.Context, s store.Store, rootPK cipher.PubKey) (*Graph,
 		graph:   make(map[cipher.PubKey]*vertex),
 	}
 
-	rootConnections, err := g.store.GetTransportsByEdge(ctx, rootPK)
+	rootConnections, err := g.store.GetTransportsByEdge(ctx, rootPK, false)
 	if err != nil {
 		return nil, err
 	}
@@ -80,7 +80,7 @@ func NewGraph(ctx context.Context, s store.Store, rootPK cipher.PubKey) (*Graph,
 // MarkAndSweep explores the Graph again from rootPK. It returns the now unreachable nodes pks by comparing
 // with the previous Graph
 func (g *Graph) MarkAndSweep(ctx context.Context, rootPK cipher.PubKey) ([]cipher.PubKey, error) {
-	rootConnections, err := g.store.GetTransportsByEdge(ctx, rootPK)
+	rootConnections, err := g.store.GetTransportsByEdge(ctx, rootPK, false)
 	if err != nil {
 		return nil, err
 	}
@@ -115,7 +115,7 @@ func (g *Graph) DeepFirstSearch(ctx context.Context, v *vertex) error {
 				connectionPK = connectionPKEdge
 			}
 			if _, ok := g.visited[connectionPK]; !ok {
-				connectionConnections, err := g.store.GetTransportsByEdge(ctx, connectionPK)
+				connectionConnections, err := g.store.GetTransportsByEdge(ctx, connectionPK, false)
 				if err != nil {
 					return err
 				}

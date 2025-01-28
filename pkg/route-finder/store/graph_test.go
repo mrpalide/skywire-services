@@ -35,7 +35,7 @@ func (m *mockStore) DeregisterTransport(context.Context, uuid.UUID) error {
 func (m *mockStore) GetTransportByID(context.Context, uuid.UUID) (*transport.Entry, error) {
 	return nil, nil
 }
-func (m *mockStore) GetTransportsByEdge(_ context.Context, edgePK cipher.PubKey) ([]*transport.Entry, error) {
+func (m *mockStore) GetTransportsByEdge(_ context.Context, edgePK cipher.PubKey, _ bool) ([]*transport.Entry, error) {
 	trs, ok := m.transports[edgePK]
 	if !ok {
 		return nil, ErrNoNodeInMockStore
