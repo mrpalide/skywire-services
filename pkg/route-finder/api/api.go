@@ -3,7 +3,6 @@ package api
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 	"time"
@@ -141,7 +140,6 @@ func (a *API) getPairedRoutes(w http.ResponseWriter, r *http.Request) {
 
 		forwardRoutes, err := graph.GetRoute(r.Context(), srcPK, dstPK, minHops, maxHops, maxNumberOfRoutes)
 		if err != nil {
-			fmt.Printf("error: %s", err.Error())
 			a.handleError(w, r, http.StatusNotFound, err)
 			return
 		}
