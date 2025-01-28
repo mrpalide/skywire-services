@@ -19,6 +19,9 @@ type vertex struct {
 func newVertex(edgeID cipher.PubKey, transports []*transport.Entry) *vertex {
 	connections := make(map[cipher.PubKey]*transport.Entry)
 	for _, tr := range transports {
+		if tr.Edges[0] == tr.Edges[1] {
+			continue
+		}
 		var neighbourPk cipher.PubKey
 		// Check which edge is this node in the transport and add a connection to the other
 		// node, it doesn't matter if that node is ourselves or a different one
