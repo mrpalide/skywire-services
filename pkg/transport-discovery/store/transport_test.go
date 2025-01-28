@@ -52,18 +52,18 @@ func (s *TransportSuite) TestRegister() {
 	})
 
 	t.Run(".GetTransportsByEdge", func(t *testing.T) {
-		entries, err := s.GetTransportsByEdge(ctx, pk1)
+		entries, err := s.GetTransportsByEdge(ctx, pk1, true)
 		require.NoError(t, err)
 		require.Len(t, entries, 1)
 		assert.Equal(t, sEntry.Entry, entries[0])
 
-		entries, err = s.GetTransportsByEdge(ctx, pk2)
+		entries, err = s.GetTransportsByEdge(ctx, pk2, true)
 		require.NoError(t, err)
 		require.Len(t, entries, 1)
 		assert.Equal(t, sEntry.Entry, entries[0])
 
 		pk, _ := cipher.GenerateKeyPair()
-		_, err = s.GetTransportsByEdge(ctx, pk)
+		_, err = s.GetTransportsByEdge(ctx, pk, true)
 		require.Error(t, err)
 	})
 

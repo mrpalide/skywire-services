@@ -33,7 +33,7 @@ type TransportStore interface {
 	RegisterTransport(context.Context, *transport.SignedEntry) error
 	DeregisterTransport(context.Context, uuid.UUID) error
 	GetTransportByID(context.Context, uuid.UUID) (*transport.Entry, error)
-	GetTransportsByEdge(context.Context, cipher.PubKey) ([]*transport.Entry, error)
+	GetTransportsByEdge(context.Context, cipher.PubKey, bool) ([]*transport.Entry, error)
 	GetNumberOfTransports(context.Context) (map[network.Type]int, error)
 	GetAllTransports(context.Context, bool) ([]*transport.Entry, error)
 	Close()

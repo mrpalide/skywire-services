@@ -83,7 +83,7 @@ func (s *memStore) GetTransportByID(_ context.Context, id uuid.UUID) (*transport
 	return v, nil
 }
 
-func (s *memStore) GetTransportsByEdge(_ context.Context, pk cipher.PubKey) ([]*transport.Entry, error) {
+func (s *memStore) GetTransportsByEdge(_ context.Context, pk cipher.PubKey, selfTransports bool) ([]*transport.Entry, error) {
 	if s.err != nil {
 		return nil, s.err
 	}
@@ -94,6 +94,11 @@ func (s *memStore) GetTransportsByEdge(_ context.Context, pk cipher.PubKey) ([]*
 	res := make([]*transport.Entry, 0)
 
 	for _, entry := range s.transports {
+		if !selfTransports {
+			if entry.Edges[0] == entry.Edges[1] {
+				continue
+			}
+		}
 		if entry != nil && entry.HasEdge(pk) {
 			res = append(res, entry)
 		}

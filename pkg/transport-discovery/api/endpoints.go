@@ -74,7 +74,7 @@ func (api *API) getTransportByEdge(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	entries, err := api.store.GetTransportsByEdge(r.Context(), pk)
+	entries, err := api.store.GetTransportsByEdge(r.Context(), pk, true)
 	if err != nil {
 		if err != store.ErrTransportNotFound {
 			api.log(r).WithError(err).Error("Error getting transport")

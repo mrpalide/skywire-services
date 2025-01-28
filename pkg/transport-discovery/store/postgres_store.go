@@ -66,7 +66,7 @@ func (s *postgresStore) GetTransportByID(_ context.Context, id uuid.UUID) (*tran
 	return &entry, nil
 }
 
-func (s *postgresStore) GetTransportsByEdge(_ context.Context, pk cipher.PubKey) ([]*transport.Entry, error) {
+func (s *postgresStore) GetTransportsByEdge(_ context.Context, pk cipher.PubKey, selfTransports bool) ([]*transport.Entry, error) {
 	var tpRecords []Transport
 	if err := s.client.Where("edge_a = ? OR edge_b = ?", pk.Hex(), pk.Hex()).Find(&tpRecords).Error; err != nil {
 		return nil, ErrTransportNotFound
@@ -78,6 +78,11 @@ func (s *postgresStore) GetTransportsByEdge(_ context.Context, pk cipher.PubKey)
 		entry, err := makeEntry(tpRecord)
 		if err != nil {
 			return nil, err
+		}
+		if !selfTransports {
+			if entry.Edges[0] == entry.Edges[1] {
+				continue
+			}
 		}
 		entries = append(entries, &entry)
 	}
