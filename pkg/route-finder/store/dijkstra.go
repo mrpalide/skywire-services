@@ -5,6 +5,7 @@ import (
 	"container/heap"
 	"context"
 	"errors"
+	"fmt"
 	"sort"
 
 	"github.com/skycoin/skywire/pkg/routing"
@@ -155,6 +156,11 @@ func (g *Graph) routes(ctx context.Context, previousNodes []previousNode, destin
 	if len(routes) == 0 {
 		return nil, ErrRouteNotFound
 	}
+
+	for _, route := range routes {
+		fmt.Println(len(route.Hops))
+	}
+
 	return routes, nil
 }
 
