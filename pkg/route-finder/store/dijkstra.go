@@ -109,7 +109,7 @@ func (g *Graph) dijkstra(ctx context.Context, source, destination *vertex) ([]pr
 func (g *Graph) routes(ctx context.Context, previousNodes []previousNode, destination *vertex, minLen, maxLen, number int) ([]routing.Route, error) {
 	// Sort
 	sort.Slice(previousNodes, func(i, j int) bool {
-		return previousNodes[i].distToDestination < previousNodes[j].distToDestination
+		return previousNodes[i].distToDestination > previousNodes[j].distToDestination
 	})
 
 	// Backtrace
