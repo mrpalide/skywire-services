@@ -142,7 +142,9 @@ func (g *Graph) routes(ctx context.Context, previousNodes []previousNode, destin
 					route.Hops = append(route.Hops, hop)
 					prevVertex = g.prev[prevVertex]
 				}
-
+				if len(route.Hops) < minLen || len(route.Hops) > maxLen {
+					continue
+				}
 				// because we are backtracking routes are reversed
 				route = reverseRoute(route)
 				routes = append(routes, route)
