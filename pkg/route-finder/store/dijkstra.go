@@ -124,7 +124,7 @@ func (g *Graph) routes(ctx context.Context, previousNodes []previousNode, destin
 		case <-ctx.Done():
 			return nil, ErrContextClosed
 		default:
-			if prev.distToDestination >= minLen && prev.distToDestination <= maxLen {
+			if prev.distToDestination >= minLen {
 				var route routing.Route
 				hop := routing.Hop{
 					From: prev.previous.edge,
