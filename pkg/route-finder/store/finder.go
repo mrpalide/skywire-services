@@ -61,6 +61,12 @@ func (g *Graph) routes(ctx context.Context, source, destination *vertex, minLen,
 			if current.node == destination && len(current.path)-1 >= minLen {
 				routes = g.appendRoute(ctx, routes, current.path)
 			}
+			// DEBUG
+			iii := 1
+			for index, _ := range g.graph {
+				fmt.Printf("%d: %s\n", iii, index.Hex())
+				iii++
+			}
 			// Explore all neighbors
 			for _, neighbor := range g.graph {
 				select {

@@ -3,6 +3,7 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"time"
@@ -96,7 +97,7 @@ func (a *API) getPairedRoutes(w http.ResponseWriter, r *http.Request) {
 		a.handleError(w, r, http.StatusBadRequest, err)
 		return
 	}
-
+	fmt.Println("here on reading body")
 	var grr rfclient.FindRoutesRequest
 	if err := json.Unmarshal(body, &grr); err != nil {
 		a.handleError(w, r, http.StatusBadRequest, err)
@@ -112,11 +113,13 @@ func (a *API) getPairedRoutes(w http.ResponseWriter, r *http.Request) {
 	graphs := make(map[cipher.PubKey]*routeFinder.Graph)
 	for _, edge := range grr.Edges {
 		srcPK := edge[0]
+		fmt.Printf("create graph for pk %s\n", srcPK.Hex())
 		if _, ok := graphs[srcPK]; !ok {
 			graph, err := routeFinder.NewGraph(r.Context(), a.store, srcPK)
 			if err != nil {
 				if err == store.ErrTransportNotFound {
 					a.handleError(w, r, http.StatusNotFound, err)
+					fmt.Printf("error on create graph for pk %s because of %s\n", srcPK.Hex(), store.ErrTransportNotFound.Error())
 					return
 				}
 				a.log(r).WithError(err).Errorf("Error creating graph for src %s", srcPK)
@@ -126,7 +129,7 @@ func (a *API) getPairedRoutes(w http.ResponseWriter, r *http.Request) {
 			graphs[srcPK] = graph
 		}
 	}
-
+	fmt.Printf("here after create graphs with len %d\n", len(graphs))
 	var minHops, maxHops int
 	if grr.Opts != nil {
 		minHops = int(grr.Opts.MinHops)
